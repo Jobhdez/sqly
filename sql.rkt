@@ -11,6 +11,7 @@
       (string-join (map symbol->string fields) ",")
       " FROM "
       (symbol->string table))]
+    
     [(list (list fields ...) (list 'from table) (list 'limit val))
      (string-append
       (join-fields fields)
@@ -18,6 +19,7 @@
       (symbol->string table)
       " LIMIT "
       (field->string val))]
+    
     [(list (list fields ...) (list 'from table) (list 'order-by exp order))
      (string-append
       (join-fields fields)
@@ -27,6 +29,7 @@
       (field->string exp)
       " "
       (field->string order))]
+    
     [(list (list fields ...) (list 'from table) (list 'where (list where-exprs ...)))
      (let [(joined-fields (join-fields fields))
            (whereeq (where->string where-exprs))]
@@ -35,6 +38,7 @@
                       (symbol->string table)
                       " WHERE "
                       whereeq))]
+    
     [(list (list fields ...) (list 'from table) (list 'where (list where-exprs ...)) (list 'order-by exp order))
      (string-append
       (join-fields fields)
