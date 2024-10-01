@@ -18,6 +18,15 @@
       (symbol->string table)
       " LIMIT "
       (field->string val))]
+    [(list (list fields ...) (list 'from table) (list 'order-by exp order))
+     (string-append
+      (join-fields fields)
+      " FROM "
+      (symbol->string table)
+      " ORDER BY "
+      (field->string exp)
+      " "
+      (field->string order))]
     [(list (list fields ...) (list 'from table) (list 'where (list where-exprs ...)))
      (let [(joined-fields (join-fields fields))
            (whereeq (where->string where-exprs))]
@@ -25,7 +34,20 @@
                       " FROM "
                       (symbol->string table)
                       " WHERE "
-                      whereeq))]))
+                      whereeq))]
+    [(list (list fields ...) (list 'from table) (list 'where (list where-exprs ...)) (list 'order-by exp order))
+     (string-append
+      (join-fields fields)
+      " FROM "
+      (field->string table)
+      " WHERE "
+      (where->string where-exprs)
+      " "
+      " ORDER BY "
+      (field->string exp)
+      " "
+      (field->string order))]))
+     
 
 (define-syntax-rule (insert exprs ...)
   (string-append
@@ -53,22 +75,22 @@
 
 (define (where->string . exprs)
   (match exprs
-    [(list (list '= id val))
+    [(list (list (? symbol? op) (? symbol? id) val))
      (string-append
       (field->string id)
-      " = "
+      (field->string op)
       (field->string val))]
-    [(list (list 'and (list '= id val) (list '= id2 val2)))
+    [(list (list 'and (list op id val) (list op2 id2 val2)))
      (string-append
       (field->string id)
-      " = "
+      (field->string op)
       (field->string val)
       " AND "
       (field->string id2)
-      " = "
+      (field->string op2)
       (field->string val2))]))
 
-  (define (field->string field)
-    (if (number? field)
-        (number->string field)
-        (symbol->string field)))
+(define (field->string field)
+  (if (number? field)
+      (number->string field)
+      (symbol->string field)))
