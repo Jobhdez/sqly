@@ -84,17 +84,30 @@
       (field->string id)
       (field->string op)
       (field->string val))]
-    [(list (list 'and (list op id val) (list op2 id2 val2)))
+    
+    [(list (list (? and-or? oper) (list op id val) (list op2 id2 val2)))
      (string-append
       (field->string id)
       (field->string op)
       (field->string val)
-      " AND "
+      (if (eq? oper 'and) " AND " " OR ")
       (field->string id2)
       (field->string op2)
-      (field->string val2))]))
+      (field->string val2))]
+
+    [(list (list (? symbol? id) (list 'in fields ...)))
+     (string-append
+      (field->string id)
+      " in "
+      "("
+      (join-fields fields)
+      ")")]))
 
 (define (field->string field)
   (if (number? field)
       (number->string field)
       (symbol->string field)))
+
+(define (and-or? e)
+  (or (eq? e 'and)
+      (eq? e 'or)))
