@@ -146,3 +146,20 @@
        " = "
        (field->string val))]))
   (string-join (map exp->string exps) ","))
+
+(define-syntax-rule (delete exprs ...)
+  (string-append
+   "DELETE " (compile-delete 'exprs ...)))
+
+(define (compile-delete . exps)
+  (match exps
+    [(list 'from table)
+     (string-append
+      "FROM "
+      (field->string table))]
+    [(list (list 'from table) (list 'where (list where-exps ...)))
+     (string-append
+      "FROM "
+      (field->string table)
+      " WHERE "
+      (where->string where-exps))]))
