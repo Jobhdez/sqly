@@ -1,9 +1,26 @@
 #lang racket
 
+;;;; == macros ==
+
 (define-syntax-rule (select exprs ...)
   (string-append
    "SELECT " (compile-select  'exprs ...)))
 
+(define-syntax-rule (insert exprs ...)
+  (string-append
+   "INSERT " (compile-insert 'exprs ...)))
+
+(define-syntax-rule (update exprs ...)
+  (string-append
+   "UPDATE " (compile-update 'exprs ...)))
+
+(define-syntax-rule (delete exprs ...)
+  (string-append
+   "DELETE " (compile-delete 'exprs ...)))
+
+;;;; == compilers ==
+
+;;; SELECT
 (define (compile-select . expr)
   (match expr
     [(list (list fields ...) (list 'from table))
@@ -51,31 +68,6 @@
       (field->string exp)
       " "
       (field->string order))]))
-     
-
-(define-syntax-rule (insert exprs ...)
-  (string-append
-   "INSERT " (compile-insert 'exprs ...)))
-
-(define (compile-insert . exp)
-  (match exp
-    [(list 'into table-name (list fields ...) (list 'values (list fields-vals ...)))
-     (let [(joined-fields (join-fields fields))
-           (joined-val-fields (join-fields fields-vals))]
-       (string-append
-        "into "
-        (symbol->string table-name)
-        "("
-        joined-fields
-        ") "
-        "values "
-        "("
-        joined-val-fields
-        ")"))]))
-      
-
-(define (join-fields fields)
-  (string-join (map field->string fields) ","))
 
 (define (where->string . exprs)
   (match exprs
@@ -102,20 +94,26 @@
       "("
       (join-fields fields)
       ")")]))
+     
 
-(define (field->string field)
-  (if (number? field)
-      (number->string field)
-      (symbol->string field)))
+;;; INSERT
+(define (compile-insert . exp)
+  (match exp
+    [(list 'into table-name (list fields ...) (list 'values (list fields-vals ...)))
+     (let [(joined-fields (join-fields fields))
+           (joined-val-fields (join-fields fields-vals))]
+       (string-append
+        "into "
+        (symbol->string table-name)
+        "("
+        joined-fields
+        ") "
+        "values "
+        "("
+        joined-val-fields
+        ")"))]))
 
-(define (and-or? e)
-  (or (eq? e 'and)
-      (eq? e 'or)))
-
-(define-syntax-rule (update exprs ...)
-  (string-append
-   "UPDATE " (compile-update 'exprs ...)))
-
+;;; UPDATE
 (define (compile-update . exprs)
   (match exprs
     [(list (? symbol? val) (list 'set (list exps ...)))
@@ -135,22 +133,8 @@
          (join-equal-exps exps)
          " WHERE "
          (where->string where-exps))])]))
-         
 
-(define (join-equal-exps exps)
-  (define (exp->string exp)
-    (match exp
-      [(list '= id val)
-       (string-append
-        (field->string id)
-       " = "
-       (field->string val))]))
-  (string-join (map exp->string exps) ","))
-
-(define-syntax-rule (delete exprs ...)
-  (string-append
-   "DELETE " (compile-delete 'exprs ...)))
-
+;;; DELETE
 (define (compile-delete . exps)
   (match exps
     [(list 'from table)
@@ -163,3 +147,26 @@
       (field->string table)
       " WHERE "
       (where->string where-exps))]))
+
+;;;; == Utils ==
+(define (join-fields fields)
+  (string-join (map field->string fields) ","))
+
+(define (field->string field)
+  (if (number? field)
+      (number->string field)
+      (symbol->string field)))
+
+(define (and-or? e)
+  (or (eq? e 'and)
+      (eq? e 'or)))
+
+(define (join-equal-exps exps)
+  (define (exp->string exp)
+    (match exp
+      [(list '= id val)
+       (string-append
+        (field->string id)
+       " = "
+       (field->string val))]))
+  (string-join (map exp->string exps) ","))
