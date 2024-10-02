@@ -67,7 +67,21 @@
       " ORDER BY "
       (field->string exp)
       " "
-      (field->string order))]))
+      (field->string order))]
+
+    [(list (list fields ...) (list 'from table) (list 'left-join table2 'on (list (? symbol? op) (? symbol? e) (? symbol? e2))))
+     (string-append
+      (join-fields fields)
+      " FROM "
+      (field->string table)
+      " LEFT JOIN "
+      (field->string table2)
+      " ON "
+      (field->string op)
+      " "
+      (field->string e)
+      " "
+      (field->string e2))]))
 
 (define (where->string . exprs)
   (match exprs
