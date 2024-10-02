@@ -111,3 +111,38 @@
 (define (and-or? e)
   (or (eq? e 'and)
       (eq? e 'or)))
+
+(define-syntax-rule (update exprs ...)
+  (string-append
+   "UPDATE " (compile-update 'exprs ...)))
+
+(define (compile-update . exprs)
+  (match exprs
+    [(list (? symbol? val) (list 'set (list exps ...)))
+     (match exps
+       [(list (list '= id val2) ...)
+        (string-append
+         (field->string val)
+        " SET "
+        (join-equal-exps exps))])]
+
+    [(list (? symbol? val) (list 'set (list exps ...)) (list 'where (list where-exps ...)))
+     (match exps
+       [(list (list '= id val2) ...)
+        (string-append
+         (field->string val)
+         " SET "
+         (join-equal-exps exps)
+         " WHERE "
+         (where->string where-exps))])]))
+         
+
+(define (join-equal-exps exps)
+  (define (exp->string exp)
+    (match exp
+      [(list '= id val)
+       (string-append
+        (field->string id)
+       " = "
+       (field->string val))]))
+  (string-join (map exp->string exps) ","))
