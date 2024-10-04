@@ -6,12 +6,10 @@
   (compile-select  'exprs ...))
 
 (define-syntax-rule (insert exprs ...)
-  (string-append
-   "INSERT " (compile-insert 'exprs ...)))
+  (compile-insert 'exprs ...))
 
 (define-syntax-rule (update exprs ...)
-  (string-append
-   "UPDATE " (compile-update 'exprs ...)))
+  (compile-update 'exprs ...))
 
 (define-syntax-rule (delete exprs ...)
   (string-append
@@ -130,7 +128,9 @@
     [(list 'into table-name (list fields ...) (list 'values (list fields-vals ...)))
      (let [(joined-fields (join-fields fields))
            (joined-val-fields (join-fields fields-vals))]
-       (string-append
+       (list
+        (string-append
+        "INSERT "
         "into "
         (symbol->string table-name)
         "("
@@ -138,29 +138,41 @@
         ") "
         "values "
         "("
-        joined-val-fields
-        ")"))]))
+        (make-params fields-vals)
+        ")")
+        (map (lambda (f) (field->string f)) fields-vals)))]))
 
 ;;; UPDATE
 (define (compile-update . exprs)
   (match exprs
-    [(list (? symbol? val) (list 'set (list exps ...)))
+    [(list (? symbol? table) (list 'set (list exps ...)))
      (match exps
-       [(list (list '= id val2) ...)
-        (string-append
-         (field->string val)
-        " SET "
-        (join-equal-exps exps))])]
+       [(list (list '= id val) ...)
+        (let [(vals (get-update-field-vals exps))
+              (eq-exps (make-update-params exps))]
+          (list
+           (string-append
+            "UPDATE "
+            (field->string table)
+            " SET "
+            (join-equal-exps eq-exps))
+           vals))])]
 
     [(list (? symbol? val) (list 'set (list exps ...)) (list 'where (list where-exps ...)))
      (match exps
        [(list (list '= id val2) ...)
-        (string-append
-         (field->string val)
-         " SET "
-         (join-equal-exps exps)
-         " WHERE "
-         (where->string where-exps))])]))
+        (let [(vals (get-update-field-vals exps))
+              (eq-exps (make-update-params exps))
+              (whereexp (where->string where-exps))]
+          (list
+           (string-append
+            (field->string val)
+            " SET "
+            (join-equal-exps eq-exps)
+            " WHERE "
+            (car whereexp))
+           (flatten (cons vals (second whereexp)))))])]))
+         
 
 ;;; DELETE
 (define (compile-delete . exps)
@@ -181,9 +193,11 @@
   (string-join (map field->string fields) ","))
 
 (define (field->string field)
-  (if (number? field)
-      (number->string field)
-      (symbol->string field)))
+  (cond ((number? field)
+         (number->string field))
+        ((symbol? field)
+         (symbol->string field))
+        (else field)))
 
 (define (and-or? e)
   (or (eq? e 'and)
@@ -197,8 +211,18 @@
         (field->string id)
        " = "
        (field->string val))]))
-  (string-join (map exp->string exps) ","))
+  (string-join (map exp->string exps) ", "))
 
 (define (make-params fields)
     (string-join 
-      (for/list ([i fields]) "~a") ","))
+      (for/list ([i fields]) "~a") ", "))
+
+(define (make-update-params fields)
+  (for/list ([i fields])
+    (define new-field (list-set i 2 "~a"))
+    new-field))
+
+(define (get-update-field-vals fields)
+  (map (lambda (field) (third field)) fields))
+
+    
