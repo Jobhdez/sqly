@@ -3,16 +3,16 @@
 ;;;; == macros ==
 
 (define-syntax-rule (select exprs ...)
-  (compile-select  'exprs ...))
+  (compile-select  `exprs ...))
 
 (define-syntax-rule (insert exprs ...)
-  (compile-insert 'exprs ...))
+  (compile-insert `exprs ...))
 
 (define-syntax-rule (update exprs ...)
-  (compile-update 'exprs ...))
+  (compile-update `exprs ...))
 
 (define-syntax-rule (delete exprs ...)
-  (compile-delete 'exprs ...))
+  (compile-delete `exprs ...))
 
 ;;;; == compilers ==
 
@@ -203,7 +203,8 @@
              (symbol->string field))]
         [(number? field)
          field]
-        [else (error "No more field types")]))
+        
+        [else field]))
 
 (define (and-or? e)
   (or (eq? e 'and)
