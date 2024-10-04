@@ -199,7 +199,7 @@
 (define (field->sql-data field)
   (cond [(symbol? field)
          (if (string-is-number? field)
-             (string->number field)
+             (string->number (symbol->string field))
              (symbol->string field))]
         [(number? field)
          field]
