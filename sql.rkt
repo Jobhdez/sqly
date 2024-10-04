@@ -12,8 +12,7 @@
   (compile-update 'exprs ...))
 
 (define-syntax-rule (delete exprs ...)
-  (string-append
-   "DELETE " (compile-delete 'exprs ...)))
+  (compile-delete 'exprs ...))
 
 ;;;; == compilers ==
 
@@ -178,15 +177,20 @@
 (define (compile-delete . exps)
   (match exps
     [(list 'from table)
-     (string-append
+     (list
+      (string-append
+      "DELETE "
       "FROM "
-      (field->string table))]
+      (field->string table)))]
     [(list (list 'from table) (list 'where (list where-exps ...)))
-     (string-append
+     (list
+      (string-append
+      "DELETE "
       "FROM "
       (field->string table)
       " WHERE "
-      (where->string where-exps))]))
+      (first (where->string where-exps)))
+      (second (where->string where-exps)))]))
 
 ;;;; == Utils ==
 (define (join-fields fields)
