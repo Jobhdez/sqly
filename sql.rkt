@@ -3,8 +3,7 @@
 ;;;; == macros ==
 
 (define-syntax-rule (select exprs ...)
-  (string-append
-   "SELECT " (compile-select  'exprs ...)))
+  (compile-select  'exprs ...))
 
 (define-syntax-rule (insert exprs ...)
   (string-append
@@ -24,90 +23,105 @@
 (define (compile-select . expr)
   (match expr
     [(list (list fields ...) (list 'from table))
-     (string-append
+     (list
+      (string-append
+      "SELECT "
       (string-join (map symbol->string fields) ",")
       " FROM "
-      (symbol->string table))]
+      (symbol->string table)))]
     
     [(list (list fields ...) (list 'from table) (list 'limit val))
-     (string-append
+     (list
+      (string-append
+       "SELECT "
       (join-fields fields)
       " FROM "
       (symbol->string table)
-      " LIMIT "
-      (field->string val))]
+      " LIMIT ~a")
+      (list (field->string val)))]
     
     [(list (list fields ...) (list 'from table) (list 'order-by exp order))
-     (string-append
+     (list
+      (string-append
+       "SELECT "
       (join-fields fields)
       " FROM "
       (symbol->string table)
-      " ORDER BY "
-      (field->string exp)
-      " "
-      (field->string order))]
+      " ORDER BY ~a "
+      (field->string order))
+      (list (field->string exp)))]
     
     [(list (list fields ...) (list 'from table) (list 'where (list where-exprs ...)))
      (let [(joined-fields (join-fields fields))
            (whereeq (where->string where-exprs))]
-       (string-append (join-fields fields)
+       (list (string-append
+                      "SELECT "
+                      (join-fields fields)
                       " FROM "
                       (symbol->string table)
                       " WHERE "
-                      whereeq))]
+                      (car whereeq))
+                      
+            (car (cdr whereeq))))]
     
     [(list (list fields ...) (list 'from table) (list 'where (list where-exprs ...)) (list 'order-by exp order))
-     (string-append
-      (join-fields fields)
-      " FROM "
-      (field->string table)
-      " WHERE "
-      (where->string where-exprs)
-      " "
-      " ORDER BY "
-      (field->string exp)
-      " "
-      (field->string order))]
+     (let [(where-exps (where->string where-exprs))]
+           (list
+            (string-append
+             "SELECT "
+             (join-fields fields) " FROM " (field->string table) " WHERE " (first where-exps) " " " ORDER BY " (field->string exp) " "  (field->string order))
+            (cdr where-exps)))]
 
     [(list (list fields ...) (list 'from table) (list 'left-join table2 'on (list (? symbol? op) (? symbol? e) (? symbol? e2))))
-     (string-append
+     (list
+      (string-append
+       "SELECT "
       (join-fields fields)
       " FROM "
       (field->string table)
       " LEFT JOIN "
       (field->string table2)
       " ON "
+      "~a "
+      " "
       (field->string op)
-      " "
-      (field->string e)
-      " "
-      (field->string e2))]))
+      " ~a")
+      (list (field->string e) (field->string e2)))]))
 
 (define (where->string . exprs)
   (match exprs
-    [(list (list (? symbol? op) (? symbol? id) val))
-     (string-append
+    [(list (list (? symbol? op) (? symbol? id) val)) ;; e.g., (list '= id 5)
+     (list
+      (string-append
       (field->string id)
       (field->string op)
-      (field->string val))]
+      "~a")
+      (list (field->string val)))]
     
     [(list (list (? and-or? oper) (list op id val) (list op2 id2 val2)))
-     (string-append
-      (field->string id)
+     (list
+      (string-append
+       (field->string id)
+       " "
       (field->string op)
-      (field->string val)
+      " ~a "
       (if (eq? oper 'and) " AND " " OR ")
       (field->string id2)
+      " "
       (field->string op2)
-      (field->string val2))]
+      " ~a ")
+      (list (field->string val) (field->string val2)))]
 
     [(list (list (? symbol? id) (list 'in fields ...)))
-     (string-append
+     (list
+      (string-append
       (field->string id)
       " in "
       "("
-      (join-fields fields)
-      ")")]))
+      (make-params fields)
+      ")")
+      (map (lambda (f) (field->string f)) fields))]))
+      
      
 
 ;;; INSERT
@@ -184,3 +198,7 @@
        " = "
        (field->string val))]))
   (string-join (map exp->string exps) ","))
+
+(define (make-params fields)
+    (string-join 
+      (for/list ([i fields]) "~a") ","))
