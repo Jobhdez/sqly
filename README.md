@@ -26,13 +26,13 @@ sqly.rkt> (select (book author) (from books) (where (books (in 3 4 5))))
 
 ```
 ### INSERT 
-```
+```racket
 sqly.rkt> (insert into books (author book) (values (herman sicp)))
 '("INSERT into books(author,book) values ($1,$2)" "herman" "sicp")
 ```
 
 ### UPDATE
-```
+```racket
 sqly.rkt> (update books (set ((= date 1) (= publisher 2))))
 '("UPDATE books SET date = ~a, publisher = ~a" (1 2))
 sqly.rkt> (update books (set ((= date 1) (= f 3))) (where (= id 1)))
@@ -40,7 +40,7 @@ sqly.rkt> (update books (set ((= date 1) (= f 3))) (where (= id 1)))
 ```
 
 ### DELETE
-```
+```racket
 sqly.rkt> (delete from books)
 '("DELETE FROM books")
 
