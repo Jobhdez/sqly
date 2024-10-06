@@ -35,6 +35,7 @@ sqly.rkt> (insert into books (author book) (values (herman sicp)))
 ```racket
 sqly.rkt> (update books (set ((= date 1) (= publisher 2))))
 '("UPDATE books SET date = ~a, publisher = ~a" (1 2))
+
 sqly.rkt> (update books (set ((= date 1) (= f 3))) (where (= id 1)))
 '("books SET date = ~a, f = ~a WHERE id=~a" (1 3 "1"))
 ```
