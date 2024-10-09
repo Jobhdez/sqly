@@ -107,13 +107,13 @@
        (field->sql-data id)
        " "
       (field->sql-data op)
-      "$"
+      " $"
       (number->string counter)
       (if (eq? oper 'and) " AND " " OR ")
       (field->sql-data id2)
       " "
       (field->sql-data op2)
-      "$"
+      " $"
       (number->string (+ counter 1)))
       (list (field->sql-data val) (field->sql-data val2)))]
 
@@ -175,7 +175,8 @@
               (whereexp (where->string where-exps (+ (length exps) 1)))]
           (flatten
            (list
-           (string-append
+            (string-append
+             "UPDATE "
             (field->sql-data val)
             " SET "
             (join-equal-exps eq-exps)
