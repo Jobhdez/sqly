@@ -21,7 +21,7 @@ sqly.rkt>  (select (book author) (from books) (where (= id 2)))
 sqly.rkt> (select (book author) (from books) (left-join books2 on (= books-id books2-id)))
 '("SELECT book,author FROM books LEFT JOIN books2 ON $1  = $2" "books-id" "books2-id")
 
-sqly.rkt> (select (book author) (from books) (where (books (in 3 4 5))))
+sqly.rkt> (select (book author) (from books) (where (books (in 3 4 5)))) 
 '("SELECT book,author FROM books WHERE books in ($1,$2,$3)" 3 4 5)
 
 ```
